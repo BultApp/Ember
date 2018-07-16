@@ -1,3 +1,9 @@
+vendor/
+dist/
+
+# Temp entry for now
+main.go.bak
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
