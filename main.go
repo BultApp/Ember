@@ -52,12 +52,12 @@ func main() {
 
 		reader, _ := zip.OpenReader(a.ExtractTo + "/" + a.Filename + ".zip")
 
-		if err := os.MkdirAll(a.ExtractTo+"/"+a.Filename, 0755); err != nil {
+		if err := os.MkdirAll(a.ExtractTo+"/", 0755); err != nil {
 			log.Fatal(err)
 		}
 
 		for _, file := range reader.File {
-			path := filepath.Join(a.ExtractTo+"/"+a.Filename, file.Name)
+			path := filepath.Join(a.ExtractTo+"/", file.Name)
 			if file.FileInfo().IsDir() {
 				os.MkdirAll(path, file.Mode())
 				continue
