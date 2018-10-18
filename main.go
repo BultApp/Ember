@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -21,9 +22,10 @@ type EmberResponse struct {
 }
 
 type AddonPost struct {
-	URL       string `json:"url"`
-	Filename  string `json:"filename"`
-	ExtractTo string `json:"extractTo"`
+	URL       	  string `json:"url"`
+	Filename  	  string `json:"filename"`
+	ExtractTo 	  string `json:"extractTo"`
+	Authorization string `json:"authorizationHeader"`
 }
 
 func main() {
@@ -40,24 +42,48 @@ func main() {
 		output, _ := os.Create(a.ExtractTo + "/" + a.Filename + ".zip")
 		defer output.Close()
 
-		response, err := http.Get(a.URL)
+		req, err := http.NewRequest("GET", a.URL, nil)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		defer response.Body.Close()
+		if (strings.Contains(a.URL, "bult.test")) {
+			req.Header.Add("Authorization", a.Authorization)
+			log.Println("Added Bult authorization header.")
+		}
 
-		io.Copy(output, response.Body)
+		client := &http.Client{}
 
-		reader, _ := zip.OpenReader(a.ExtractTo + "/" + a.Filename + ".zip")
+		log.Println("Running request.")
+		response, err := client.Do(req);
 
-		if err := os.MkdirAll(a.ExtractTo+"/", 0755); err != nil {
+		if err != nil {
+			log.Println("Client request failed.")
 			log.Fatal(err)
 		}
 
+		defer response.Body.Close()
+
+		log.Println("Copying output to file.")
+		_, err = io.Copy(output, response.Body)
+
+		if err != nil {
+			log.Println("Copying request failed.")
+			log.Fatal(err)
+		}
+
+		log.Println("Opening zip reader.")
+		reader, _ := zip.OpenReader(a.ExtractTo + "/" + a.Filename + ".zip")
+
+		if err := os.MkdirAll(a.ExtractTo+"/"+a.Filename, 0755); err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("Looping through reader.")
 		for _, file := range reader.File {
-			path := filepath.Join(a.ExtractTo+"/", file.Name)
+			log.Println("Looping through " + file.Name)
+			path := filepath.Join(a.ExtractTo+"/"+a.Filename, file.Name)
 			if file.FileInfo().IsDir() {
 				os.MkdirAll(path, file.Mode())
 				continue
@@ -95,3 +121,4 @@ func main() {
 
 	http.ListenAndServe(":5650", r)
 }
+
